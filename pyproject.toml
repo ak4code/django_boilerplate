@@ -1,0 +1,57 @@
+[project]
+name = "django-boilerplate"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = "==3.13.*"
+dependencies = [
+    "django==6.0",
+    "django-environ==0.12.0",
+    "django-filter==25.2",
+    "django-split-settings==1.3.2",
+    "djangorestframework==3.16.1",
+]
+
+[dependency-groups]
+dev = [
+    "bandit==1.9.2",
+    "mypy==1.19.0",
+    "pre-commit==4.5.0",
+    "pytest==9.0.1",
+    "ruff==0.14.7",
+]
+
+[tool.ruff]
+fix = false
+line-length = 120
+
+[tool.ruff.lint]
+exclude = ["venv/*", ".venv/*", ".git", "*/migrations/*", "templates/*", "*__init__.py", "manage.py", "settings.py",]
+ignore = ["PT009", "S101", "A003", "D100", "D104", "D105", "D106", "D107", "D203", "D205", "D212", "D4",]
+select = [
+    "PT", "E", "F", "UP", "B", "SIM", "I", "A", "COM", "C4", "G", "T20", "PT", "Q", "RET", "SIM", "W", "D", "BLE",
+    "DJ", "RSE", "RUF100",
+]
+extend-fixable = ["I001", "I002", "COM812", "Q000", "D210", "D200"]
+
+[tool.ruff.lint.flake8-pytest-style]
+fixture-parentheses = false
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "single"
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+line-ending = "lf"
+skip-magic-trailing-comma = false
+
+
+[tool.mypy]
+python_version = '3.13'
+ignore_missing_imports = true
+warn_unused_configs = true
+exclude = ['migrations', '.venv', '__pycache__']
+
+[tool.bandit]
+exclude_dirs = ['.venv', 'migrations', '__pycache__']
