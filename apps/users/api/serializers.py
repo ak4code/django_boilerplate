@@ -28,4 +28,4 @@ class UserResponseSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = User
-        fields = ('uuid', 'email', 'date_joined', 'is_active')
+        fields = ('external_id', 'email', 'date_joined', 'is_active')

@@ -9,7 +9,7 @@ from apps.users.managers import UserManager
 class User(AbstractBaseUser, PermissionsMixin):
     """Модель пользователя, использующая email в качестве логина."""
 
-    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
+    external_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     email = models.EmailField(verbose_name='Email', unique=True, db_index=True)
     slug = models.CharField(
         verbose_name='Слаг страницы пользователя',

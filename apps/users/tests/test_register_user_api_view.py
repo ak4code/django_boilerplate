@@ -1,86 +1,115 @@
 from typing import Any
 
 import pytest
+from django.core.exceptions import ValidationError
 from rest_framework import status
-
-from apps.users.api.views import UserRegisterApi
+from rest_framework.test import APIClient
 
 pytestmark = [pytest.mark.django_db]
 
 
-def test_user_register_success(api_rf: Any, monkeypatch: Any) -> None:
-    """Проверяет успешную регистрацию пользователя.
+def test_user_register_success(
+    api_client: APIClient,
+) -> None:
+    """
+    Проверяет успешную регистрацию пользователя.
 
     Arrange:
         - Подготавливаем валидные данные (email, совпадающие пароли).
-        - Мокаем сервисный слой create_user, чтобы он возвращал объект пользователя.
         - Формируем POST-запрос к /api/v1/users/register/.
 
     Act:
-        - Выполняем запрос через UserRegisterApi.
+        - Выполняем запрос через APIClient.
 
     Assert:
-        - Проверяем HTTP статус 201 (Created).
+        - Проверяем HTTP-статус 201 (Created).
         - Проверяем, что возвращенный email соответствует переданному.
     """
-    email = 'newuser@example.com'
-    password = 'strongpassword'
-    payload = {'email': email, 'password': password, 'confirm_password': password}
+    email = "newuser@example.com"
+    password = "strongpassword"
+    payload = {
+        "email": email,
+        "password": password,
+        "confirm_password": password,
+    }
 
-    request = api_rf.post('/api/v1/users/register/', data=payload)
-    view = UserRegisterApi.as_view()
-
-    response = view(request)
+    response = api_client.post(
+        "/api/v1/users/register/",
+        data=payload,
+        format="json",
+    )
 
     assert response.status_code == status.HTTP_201_CREATED
     assert response.data.get('email') == email
 
 
-def test_user_register_service_validation_error(api_rf: Any, monkeypatch: Any) -> None:
-    """Проверяет обработку ошибки бизнес-логики (ValidationError).
+def test_user_register_service_validation_error(
+    api_client: APIClient,
+    mocker: Any,
+) -> None:
+    """
+    Проверяет обработку ошибки бизнес-логики (ValidationError).
 
     Arrange:
         - Подготавливаем данные для регистрации.
-        - Мокаем сервисный слой create_user на выброс ошибки (дубликат пользователя).
-        - Формируем запрос к /api/v1/users/register/.
+        - Мокаем сервисный слой create_user на выброс ошибки.
+        - Формируем POST-запрос к /api/v1/users/register/.
 
     Act:
-        - Выполняем запрос через UserRegisterApi.
+        - Выполняем запрос через APIClient.
 
     Assert:
-        - Проверяем HTTP статус 400 (Bad Request).
+        - Проверяем HTTP-статус 400 (Bad Request).
         - Проверяем наличие сообщения об ошибке.
     """
-    password = 'pwd'
-    payload = {'email': 'bad@example.com', 'password': password, 'confirm_password': password}
+    mock_create_user = mocker.patch(
+        "apps.users.api.views.create_user",
+    )
+    mock_create_user.side_effect = ValidationError('User already exists')
 
-    request = api_rf.post('/api/v1/users/register/', data=payload)
-    view = UserRegisterApi.as_view()
+    password = "strongpassword"
+    payload = {
+        "email": "bad@example.com",
+        "password": password,
+        "confirm_password": password,
+    }
 
-    response = view(request)
+    response = api_client.post(
+        "/api/v1/users/register/",
+        data=payload,
+        format="json",
+    )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert response.data
+    assert 'User already exists' in response.data.get('detail')
 
 
-def test_user_register_password_mismatch(api_rf: Any) -> None:
-    """Проверяет валидацию несовпадающих паролей на уровне сериализатора.
+def test_user_register_password_mismatch(
+    api_client: APIClient,
+) -> None:
+    """
+    Проверяет валидацию несовпадающих паролей на уровне сериализатора.
 
     Arrange:
         - Подготавливаем данные с разными паролями.
         - Формируем запрос к /api/v1/users/register/.
 
     Act:
-        - Выполняем запрос через UserRegisterApi.
+        - Выполняем запрос через APIClient.
 
     Assert:
-        - Проверяем HTTP статус 400 (Bad Request).
+        - Проверяем HTTP-статус 400 (Bad Request).
     """
-    payload = {'email': 'test@example.com', 'password': 'password123', 'confirm_password': 'password456'}
+    payload = {
+        "email": "test@example.com",
+        "password": "password123",
+        "confirm_password": "password456",
+    }
 
-    request = api_rf.post('/api/v1/users/register/', data=payload)
-    view = UserRegisterApi.as_view()
-
-    response = view(request)
+    response = api_client.post(
+        "/api/v1/users/register/",
+        data=payload,
+        format="json",
+    )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
