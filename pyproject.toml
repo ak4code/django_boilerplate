@@ -49,6 +49,13 @@ indent-style = "space"
 line-ending = "lf"
 skip-magic-trailing-comma = false
 
+[[tool.ty.overrides]]
+exclude = [
+    ".venv/**",
+    "migrations/**",
+    "tests/**",
+]
+
 [tool.bandit]
 exclude_dirs = ['.venv', 'migrations', '__pycache__', 'tests']
 
