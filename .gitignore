@@ -9,6 +9,7 @@ wheels/
 # Logs and databases
 *.log
 *.sqlite3
+.cache/
 
 # Virtual environments
 .venv

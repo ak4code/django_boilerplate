@@ -1,0 +1,57 @@
+services:
+  redis:
+    image: redis:7-alpine
+    hostname: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - backend
+
+  django:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+      args:
+        PYTHON_VERSION: ${PYTHON_VERSION:-3.13.7}
+        UID: ${UID:-1000}
+        INSTALL_DEV: ${INSTALL_DEV:-true}
+    hostname: django
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/home/django/app
+      - ./.cahce/logs:/home/django/logs
+      - ./.cache/www:/home/django/www
+      - uv_cache:/home/django/.cache/uv
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-dev}
+      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-config.settings}
+    env_file:
+      - ./.env
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: ${MODE:-dev}
+    restart: unless-stopped
+    networks:
+      - backend
+
+volumes:
+  pg_data:
+  redis_data:
+  uv_cache:
+
+networks:
+  backend:
+    driver: bridge
