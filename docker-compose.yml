@@ -31,7 +31,7 @@ services:
       - "8000:8000"
     volumes:
       - .:/home/django/app
-      - ./.cahce/logs:/home/django/logs
+      - ./.cache/logs:/home/django/logs
       - ./.cache/www:/home/django/www
       - uv_cache:/home/django/.cache/uv
     environment:
