@@ -6,7 +6,7 @@ _redis_client: Redis | None = None
 
 def get_redis() -> Redis:
     """
-    Возвращает общий Redis-клиент для проекта.
+    Возвращает общий Redis-клиент.
 
     :return: экземпляр Redis
     :raises RuntimeError: если клиент не может быть создан

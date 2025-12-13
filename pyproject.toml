@@ -50,7 +50,7 @@ line-ending = "lf"
 skip-magic-trailing-comma = false
 
 [tool.bandit]
-exclude_dirs = ['.venv', 'migrations', '__pycache__']
+exclude_dirs = ['.venv', 'migrations', '__pycache__', 'tests']
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = 'config.settings'

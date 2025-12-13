@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: end-of-file-fixer
       - id: trailing-whitespace
@@ -9,25 +9,23 @@ repos:
     hooks:
       - id: ruff-check
         name: ruff check
-        entry: uv run ruff check
+        entry: uv run ruff check --force-exclude
         language: system
         pass_filenames: true
         types: [python]
-        exclude: ^(migrations/|.venv/|venv/|tests/)
 
       - id: ruff-format
         name: ruff format
-        entry: uv run ruff format
+        entry: uv run ruff format --force-exclude
         language: system
         pass_filenames: true
         types: [python]
-        exclude: ^(migrations/|.venv/|venv/|tests/)
 
       - id: bandit
         name: bandit
-        entry: uv run bandit -c pyproject.toml -r .
+        entry: uv run bandit -c pyproject.toml
         language: system
-        pass_filenames: false
+        pass_filenames: true
         types: [python]
         exclude: ^(migrations/|.venv/|venv/|tests/)
 
@@ -35,6 +33,6 @@ repos:
         name: ty check
         entry: uvx ty check
         language: system
-        pass_filenames: false
+        pass_filenames: true
         types: [python]
         exclude: ^(migrations/|.venv/|venv/|tests/)
