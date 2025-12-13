@@ -12,27 +12,27 @@ repos:
         entry: uv run ruff check --force-exclude
         language: system
         pass_filenames: true
-        types: [python]
+        types: [ python ]
 
       - id: ruff-format
         name: ruff format
         entry: uv run ruff format --force-exclude
         language: system
         pass_filenames: true
-        types: [python]
-
-      - id: bandit
-        name: bandit
-        entry: uv run bandit -c pyproject.toml
-        language: system
-        pass_filenames: true
-        types: [python]
-        exclude: ^(migrations/|.venv/|venv/|tests/)
+        types: [ python ]
 
       - id: ty-check
         name: ty check
         entry: uvx ty check
         language: system
         pass_filenames: true
-        types: [python]
+        types: [ python ]
+        exclude: ^(migrations/|.venv/|venv/|tests/)
+
+      - id: bandit
+        name: bandit
+        entry: uv run bandit -c pyproject.toml
+        language: system
+        pass_filenames: true
+        types: [ python ]
         exclude: ^(migrations/|.venv/|venv/|tests/)
