@@ -21,6 +21,7 @@ dev = [
     "pytest-django==4.11.1",
     "pytest-mock==3.15.1",
     "ruff==0.14.7",
+    "ty==0.0.1a34",
 ]
 
 [tool.ruff]
@@ -47,13 +48,6 @@ quote-style = "single"
 indent-style = "space"
 line-ending = "lf"
 skip-magic-trailing-comma = false
-
-
-[tool.mypy]
-python_version = '3.13'
-ignore_missing_imports = true
-warn_unused_configs = true
-exclude = ['migrations', '.venv', '__pycache__']
 
 [tool.bandit]
 exclude_dirs = ['.venv', 'migrations', '__pycache__']
