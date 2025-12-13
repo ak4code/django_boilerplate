@@ -59,7 +59,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    },
 }
 
 AUTH_USER_MODEL = 'users.User'
@@ -95,3 +95,9 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.BasicAuthentication',
     ),
 }
+
+REDIS_HOST: str = env.str('REDIS_HOST', 'redis')
+REDIS_PORT: int = env.int('REDIS_PORT', 6379)
+REDIS_DB: int = env.int('REDIS_DB', 0)
+REDIS_PASSWORD: str = env.str('REDIS_PASSWORD', None)
+REDIS_DECODE_RESPONSES: bool = True
