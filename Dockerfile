@@ -1,5 +1,5 @@
 ARG UID=1000
-ARG PYTHON_VERSION=3.13.7
+ARG PYTHON_VERSION=3.13
 
 FROM python:${PYTHON_VERSION}-slim-trixie AS builder
 
@@ -35,6 +35,7 @@ RUN apt-get update && apt-get install -y \
     netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
+ARG UID
 RUN useradd --create-home --shell /bin/bash --uid ${UID:-1000} django
 USER django
 WORKDIR /home/django/app

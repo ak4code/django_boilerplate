@@ -1,6 +1,27 @@
 services:
+  postgres:
+    image: postgres:18-alpine
+    hostname: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-app}
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-app}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app} -d ${POSTGRES_DB:-app}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - backend
+
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     hostname: redis
     ports:
       - "6379:6379"
@@ -27,7 +48,7 @@ services:
       dockerfile: Dockerfile
       target: runtime
       args:
-        PYTHON_VERSION: ${PYTHON_VERSION:-3.13.7}
+        PYTHON_VERSION: ${PYTHON_VERSION:-3.13}
         UID: ${UID:-1000}
         INSTALL_DEV: ${INSTALL_DEV:-true}
     hostname: django
@@ -41,9 +62,14 @@ services:
     environment:
       ENVIRONMENT: ${ENVIRONMENT:-dev}
       DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-config.settings}
+      DATABASE_URL: postgres://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app}@postgres:5432/${POSTGRES_DB:-app}
+      REDIS_URL: redis://redis:6379/1
+      POSTGRES_HOST: postgres
     env_file:
       - ./.env
     depends_on:
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
     command: ${MODE:-dev}

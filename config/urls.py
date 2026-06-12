@@ -1,21 +1,20 @@
 """
-URL configuration for config project.
+URL configuration проекта.
 
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/6.0/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
+Версионирование API реализовано через заголовок Accept (AcceptHeaderVersioning),
+поэтому версия не входит в URL. Клиент указывает версию так:
+
+    Accept: application/json; version=v1
+
+Если заголовок не передан, используется версия по умолчанию (см. REST_FRAMEWORK
+в config/settings/base.py).
 """
+
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import include, path
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
+
+from core.health import health_check
 
 api_urlpatterns = [
     path('users/', include('apps.users.api.urls', namespace='users_api')),
@@ -23,5 +22,10 @@ api_urlpatterns = [
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/v1/', include(api_urlpatterns)),
+    path('health/', health_check, name='health_check'),
+    path('api/', include(api_urlpatterns)),
+    # OpenAPI schema & docs
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 ]

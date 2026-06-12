@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
@@ -16,8 +17,14 @@ class UserRegisterApi(APIView):
     request_serializer = UserRegisterRequestSerializer
     response_serializer = UserResponseSerializer
 
+    @extend_schema(
+        request=UserRegisterRequestSerializer,
+        responses={status.HTTP_201_CREATED: UserResponseSerializer},
+        summary='Регистрация нового пользователя',
+    )
     def post(self, request: Request) -> Response:
-        """Обрабатывает POST запрос на регистрацию.
+        """
+        Обрабатывает POST запрос на регистрацию.
 
         1. Валидирует входящие данные через InputSerializer.
         2. Вызывает сервис создания пользователя.
@@ -44,8 +51,13 @@ class UserMeApi(APIView):
     permission_classes = [IsAuthenticated]
     response_serializer = UserResponseSerializer
 
+    @extend_schema(
+        responses={status.HTTP_200_OK: UserResponseSerializer},
+        summary='Профиль текущего пользователя',
+    )
     def get(self, request: Request) -> Response:
-        """Возвращает данные текущего авторизованного пользователя.
+        """
+        Возвращает данные текущего авторизованного пользователя.
 
         :param request: Объект HTTP запроса.
         :return: HTTP ответ с данными профиля.

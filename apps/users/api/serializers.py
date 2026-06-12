@@ -1,5 +1,7 @@
 from rest_framework import serializers
+
 from apps.users.models import User
+
 
 class UserRegisterRequestSerializer(serializers.Serializer):
     """Сериализатор для валидации входящих данных при регистрации."""
@@ -26,6 +28,7 @@ class UserResponseSerializer(serializers.ModelSerializer):
     Сериализатор для формирования ответа с данными пользователя.
     Исключает чувствительные данные (пароли, права доступа).
     """
+
     class Meta:
         model = User
         fields = ('external_id', 'email', 'date_joined', 'is_active')
