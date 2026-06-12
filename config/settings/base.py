@@ -65,12 +65,34 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': env.db('DATABASE_URL', default=f'sqlite:///{BASE_DIR / "db.sqlite3"}'),
 }
-DATABASES['default']['CONN_MAX_AGE'] = env.int('DJANGO_DB_CONN_MAX_AGE', default=60)
-DATABASES['default']['CONN_HEALTH_CHECKS'] = True
+
+_db_is_postgres = DATABASES['default']['ENGINE'] == 'django.db.backends.postgresql'
+if _db_is_postgres and env.bool('DJANGO_DB_POOL', default=True):
+    # Нативный пул psycopg: пул несовместим с CONN_MAX_AGE и health checks Django
+    DATABASES['default']['CONN_MAX_AGE'] = 0
+    DATABASES['default']['CONN_HEALTH_CHECKS'] = False
+    DATABASES['default'].setdefault('OPTIONS', {})['pool'] = {
+        'min_size': env.int('DJANGO_DB_POOL_MIN_SIZE', default=2),
+        'max_size': env.int('DJANGO_DB_POOL_MAX_SIZE', default=10),
+        'timeout': env.int('DJANGO_DB_POOL_TIMEOUT', default=10),
+    }
+else:
+    DATABASES['default']['CONN_MAX_AGE'] = env.int('DJANGO_DB_CONN_MAX_AGE', default=60)
+    DATABASES['default']['CONN_HEALTH_CHECKS'] = True
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'users.User'
+
+# Argon2 — быстрее и устойчивее PBKDF2; остальные хэшеры нужны
+# для прозрачной миграции уже существующих паролей
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.Argon2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+    'django.contrib.auth.hashers.ScryptPasswordHasher',
+]
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -122,9 +144,13 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 20,
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-    'DEFAULT_THROTTLE_CLASSES': ('rest_framework.throttling.AnonRateThrottle',),
+    'DEFAULT_THROTTLE_CLASSES': (
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ),
     'DEFAULT_THROTTLE_RATES': {
         'anon': env.str('DJANGO_THROTTLE_ANON', default='100/min'),
+        'user': env.str('DJANGO_THROTTLE_USER', default='1000/min'),
     },
 }
 
@@ -139,8 +165,23 @@ CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
         'LOCATION': env.str('REDIS_URL', default='redis://redis:6379/1'),
+        'KEY_PREFIX': env.str('DJANGO_CACHE_KEY_PREFIX', default='app'),
+        'OPTIONS': {
+            # Параметры пула соединений redis-py
+            'max_connections': env.int('REDIS_MAX_CONNECTIONS', default=100),
+            'socket_connect_timeout': 5,
+            'socket_timeout': 5,
+            'retry_on_timeout': True,
+            'health_check_interval': 30,
+        },
     },
 }
+
+# Сессии в кэше с write-through в БД: чтение не нагружает PostgreSQL,
+# при сбросе Redis сессии не теряются
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+
+EMAIL_TIMEOUT = env.int('DJANGO_EMAIL_TIMEOUT', default=10)
 
 LOGGING = {
     'version': 1,
@@ -165,6 +206,12 @@ LOGGING = {
         'django': {
             'handlers': ['console'],
             'level': env.str('DJANGO_LOG_LEVEL', default='INFO'),
+            'propagate': False,
+        },
+        # Под нагрузкой 4xx-шум забивает логи: пишем только 5xx и медленные ответы
+        'django.request': {
+            'handlers': ['console'],
+            'level': env.str('DJANGO_REQUEST_LOG_LEVEL', default='ERROR'),
             'propagate': False,
         },
     },
