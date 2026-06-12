@@ -16,7 +16,7 @@ def test_user_register_success(
 
     Arrange:
         - Подготавливаем валидные данные (email, совпадающие пароли).
-        - Формируем POST-запрос к /api/v1/users/register/.
+        - Формируем POST-запрос к /api/users/register/.
 
     Act:
         - Выполняем запрос через APIClient.
@@ -25,18 +25,18 @@ def test_user_register_success(
         - Проверяем HTTP-статус 201 (Created).
         - Проверяем, что возвращенный email соответствует переданному.
     """
-    email = "newuser@example.com"
-    password = "strongpassword"
+    email = 'newuser@example.com'
+    password = 'strongpassword'
     payload = {
-        "email": email,
-        "password": password,
-        "confirm_password": password,
+        'email': email,
+        'password': password,
+        'confirm_password': password,
     }
 
     response = api_client.post(
-        "/api/v1/users/register/",
+        '/api/users/register/',
         data=payload,
-        format="json",
+        format='json',
     )
 
     assert response.status_code == status.HTTP_201_CREATED
@@ -53,7 +53,7 @@ def test_user_register_service_validation_error(
     Arrange:
         - Подготавливаем данные для регистрации.
         - Мокаем сервисный слой create_user на выброс ошибки.
-        - Формируем POST-запрос к /api/v1/users/register/.
+        - Формируем POST-запрос к /api/users/register/.
 
     Act:
         - Выполняем запрос через APIClient.
@@ -63,21 +63,21 @@ def test_user_register_service_validation_error(
         - Проверяем наличие сообщения об ошибке.
     """
     mock_create_user = mocker.patch(
-        "apps.users.api.views.create_user",
+        'apps.users.api.views.create_user',
     )
     mock_create_user.side_effect = ValidationError('User already exists')
 
-    password = "strongpassword"
+    password = 'strongpassword'
     payload = {
-        "email": "bad@example.com",
-        "password": password,
-        "confirm_password": password,
+        'email': 'bad@example.com',
+        'password': password,
+        'confirm_password': password,
     }
 
     response = api_client.post(
-        "/api/v1/users/register/",
+        '/api/users/register/',
         data=payload,
-        format="json",
+        format='json',
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -92,7 +92,7 @@ def test_user_register_password_mismatch(
 
     Arrange:
         - Подготавливаем данные с разными паролями.
-        - Формируем запрос к /api/v1/users/register/.
+        - Формируем запрос к /api/users/register/.
 
     Act:
         - Выполняем запрос через APIClient.
@@ -101,15 +101,15 @@ def test_user_register_password_mismatch(
         - Проверяем HTTP-статус 400 (Bad Request).
     """
     payload = {
-        "email": "test@example.com",
-        "password": "password123",
-        "confirm_password": "password456",
+        'email': 'test@example.com',
+        'password': 'password123',
+        'confirm_password': 'password456',
     }
 
     response = api_client.post(
-        "/api/v1/users/register/",
+        '/api/users/register/',
         data=payload,
-        format="json",
+        format='json',
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST

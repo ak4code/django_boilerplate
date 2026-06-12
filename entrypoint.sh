@@ -1,11 +1,7 @@
 #!/bin/bash
 set -e
 
-# Проверка виртуального окружения
-echo "Проверка Python окружения:"
-echo "Python path: $(which python)"
-echo "Python version: $(python --version)"
-echo "Virtual env: ${VIRTUAL_ENV:-'Используется PATH для активации venv'}"
+echo "Python: $(python --version) ($(which python))"
 
 # Функция для ожидания готовности сервисов
 wait_for_service() {
@@ -20,9 +16,13 @@ wait_for_service() {
     echo "$service готов!"
 }
 
-# Ожидание Redis если он используется
+# Ожидание зависимостей
 if [ -n "$REDIS_URL" ]; then
-    wait_for_service redis 6379 "Redis"
+    wait_for_service "${REDIS_HOST:-redis}" "${REDIS_PORT:-6379}" "Redis"
+fi
+
+if [ -n "$POSTGRES_HOST" ]; then
+    wait_for_service "$POSTGRES_HOST" "${POSTGRES_PORT:-5432}" "PostgreSQL"
 fi
 
 # Применение миграций
@@ -30,7 +30,7 @@ echo "Применение миграций..."
 python manage.py migrate --no-input
 
 # Сбор статических файлов в продакшене
-if [ "$MODE" = "prod" ] || [ "$DEBUG" = "False" ]; then
+if [ "$1" = "prod" ] || [ "$ENVIRONMENT" = "prod" ]; then
     echo "Сбор статических файлов..."
     python manage.py collectstatic --no-input --clear
 fi
@@ -43,11 +43,9 @@ case "$1" in
         ;;
     "prod")
         echo "Запуск в продакшн режиме..."
-        exec gunicorn core.wsgi:application \
+        exec gunicorn config.wsgi:application \
             --bind 0.0.0.0:8000 \
-            --workers 4 \
-            --worker-class gevent \
-            --worker-connections 1000 \
+            --workers "${GUNICORN_WORKERS:-4}" \
             --max-requests 1000 \
             --max-requests-jitter 100 \
             --timeout 30 \
@@ -55,23 +53,6 @@ case "$1" in
             --log-level info \
             --access-logfile - \
             --error-logfile -
-        ;;
-    "celery-worker")
-        echo "Запуск Celery Worker..."
-        exec celery -A core worker \
-            --loglevel=info \
-            --concurrency=4 \
-            --max-tasks-per-child=1000 \
-            --time-limit=300 \
-            --soft-time-limit=240
-        ;;
-    "celery-beat")
-        echo "Запуск Celery Beat..."
-        # Удаление старого расписания если есть
-        rm -f celerybeat.pid
-        exec celery -A core beat \
-            --loglevel=info \
-            --scheduler django_celery_beat.schedulers:DatabaseScheduler
         ;;
     "shell")
         echo "Запуск Django Shell..."

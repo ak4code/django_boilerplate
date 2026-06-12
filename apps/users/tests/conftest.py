@@ -30,8 +30,8 @@ def user_factory(
     """
 
     def make_user(
-        email: str = "user@example.com",
-        password: str = "password",
+        email: str = 'user@example.com',
+        password: str = 'password',
         **extra: Any,
     ) -> AbstractBaseUser:
         """

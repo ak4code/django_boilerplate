@@ -6,6 +6,8 @@ from apps.users.models import User
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
+    """Админ-панель для модели пользователя с email в качестве логина."""
+
     ordering = ['email']
     list_display = ['email', 'is_staff', 'is_active']
     list_filter = ['is_staff', 'is_active']
