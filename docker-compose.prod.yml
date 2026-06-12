@@ -1,0 +1,32 @@
+# Production-оверрайд:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+# Код запекается в образ (без bind-mount), порты БД не публикуются.
+services:
+  django:
+    build:
+      target: production
+      args:
+        INSTALL_DEV: "false"
+    environment:
+      ENVIRONMENT: prod
+    command: prod
+    deploy:
+      resources:
+        limits:
+          cpus: "${DJANGO_CPU_LIMIT:-2}"
+          memory: ${DJANGO_MEMORY_LIMIT:-1g}
+        reservations:
+          cpus: "0.5"
+          memory: 256m
+
+  postgres:
+    deploy:
+      resources:
+        limits:
+          memory: ${POSTGRES_MEMORY_LIMIT:-1g}
+
+  redis:
+    deploy:
+      resources:
+        limits:
+          memory: 384m

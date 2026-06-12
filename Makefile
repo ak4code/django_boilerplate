@@ -1,4 +1,4 @@
-.PHONY: env install run migrate makemigrations superuser test lint format up down logs
+.PHONY: env install run migrate makemigrations superuser test lint format up down logs up-prod down-prod logs-prod
 
 env:
 	@if [ -f .env ]; then \
@@ -42,3 +42,12 @@ down:
 
 logs:
 	docker compose logs -f django
+
+up-prod:
+	docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+
+down-prod:
+	docker compose -f docker-compose.yml -f docker-compose.prod.yml down
+
+logs-prod:
+	docker compose -f docker-compose.yml -f docker-compose.prod.yml logs -f django

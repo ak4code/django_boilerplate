@@ -1,6 +1,11 @@
 # Production settings
 DEBUG = False
 
+# Healthcheck Docker/k8s ходит изнутри контейнера на 127.0.0.1 по HTTP
+if '127.0.0.1' not in ALLOWED_HOSTS:  # noqa: F821
+    ALLOWED_HOSTS = [*ALLOWED_HOSTS, '127.0.0.1']  # noqa: F821
+SECURE_REDIRECT_EXEMPT = [r'^health/$']
+
 # Приложение работает за обратным прокси (nginx/traefik), который терминирует TLS
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = env.bool('DJANGO_SECURE_SSL_REDIRECT', default=True)  # noqa: F821

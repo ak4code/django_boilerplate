@@ -31,7 +31,7 @@
 | 👤 **Кастомный пользователь** | Email-логин + `external_id` (UUID) для интеграций |
 | 💓 **Health-check** | `/health/` с проверкой БД и Redis — готов для k8s-проб |
 | 🧹 **Качество кода** | ruff · bandit · ty · pre-commit · pytest · GitHub Actions |
-| 🐳 **Docker** | Multi-stage образ (non-root) + compose с PostgreSQL и Redis |
+| 🐳 **Docker** | Multi-stage образ (non-root, HEALTHCHECK) + compose dev/prod |
 
 ## 🚀 Быстрый старт
 
@@ -196,12 +196,42 @@ make up / down       # 🐳 docker compose up/down
 <br/>
 
 `ENVIRONMENT=prod` включает: `DEBUG=False`, SSL redirect, HSTS, secure cookies,
-JSON-only рендеринг DRF, манифестную статику (whitenoise) и запуск через gunicorn
-(`MODE=prod` в docker-compose).
+JSON-only рендеринг DRF, манифестную статику (whitenoise) и запуск через gunicorn.
 
 ```bash
-ENVIRONMENT=prod MODE=prod INSTALL_DEV=false docker compose up -d --build
+make up-prod
+# или явно:
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
+
+В prod-режиме код запекается в образ (таргет `production`, без bind-mount),
+dev-зависимости не устанавливаются, порты PostgreSQL/Redis не публикуются,
+на сервисы наложены лимиты CPU/памяти.
+
+</details>
+
+<details>
+<summary><b>🐳 Устройство Docker-окружения</b></summary>
+
+<br/>
+
+**Dockerfile** (multi-stage):
+
+| Стадия | Назначение |
+| --- | --- |
+| `builder` | Сборка venv через uv (`--locked`, BuildKit-кэш, прекомпиляция байткода) |
+| `runtime` | Минимальный рантайм для разработки: non-root, venv принадлежит root |
+| `production` | `runtime` + код, запечённый в образ |
+
+Образ содержит `HEALTHCHECK`, который опрашивает `/health/` (БД + Redis).
+
+**Compose** (три файла):
+
+| Файл | Когда применяется |
+| --- | --- |
+| `docker-compose.yml` | Общая база: сервисы, healthchecks, лимиты логов |
+| `docker-compose.override.yml` | Dev: подхватывается автоматически — bind-mount кода, порты БД на localhost |
+| `docker-compose.prod.yml` | Prod: подключается явно — таргет `production`, лимиты ресурсов |
 
 </details>
 
