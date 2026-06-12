@@ -43,13 +43,21 @@ case "$1" in
         ;;
     "prod")
         echo "Запуск в продакшн режиме..."
+        # Формула по умолчанию: CPU * 2 + 1
+        WORKERS="${GUNICORN_WORKERS:-$(( $(nproc) * 2 + 1 ))}"
+        echo "Gunicorn workers: $WORKERS, threads: ${GUNICORN_THREADS:-4}"
         exec gunicorn config.wsgi:application \
             --bind 0.0.0.0:8000 \
-            --workers "${GUNICORN_WORKERS:-4}" \
+            --workers "$WORKERS" \
+            --worker-class gthread \
+            --threads "${GUNICORN_THREADS:-4}" \
+            --worker-tmp-dir /dev/shm \
+            --backlog 2048 \
             --max-requests 1000 \
             --max-requests-jitter 100 \
-            --timeout 30 \
-            --keep-alive 2 \
+            --timeout "${GUNICORN_TIMEOUT:-30}" \
+            --graceful-timeout 30 \
+            --keep-alive 5 \
             --log-level info \
             --access-logfile - \
             --error-logfile -

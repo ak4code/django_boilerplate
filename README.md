@@ -27,6 +27,7 @@
 | 📖 **OpenAPI из коробки** | Swagger UI и ReDoc (drf-spectacular) |
 | ⚙️ **12-factor конфигурация** | Всё через переменные окружения (django-environ) |
 | 🔒 **Безопасный production** | HSTS, secure cookies, SSL redirect, whitenoise, gunicorn |
+| ⚡ **Highload-тюнинг** | Пул соединений psycopg, кэш-сессии, Argon2, rate limiting |
 | 👤 **Кастомный пользователь** | Email-логин + `external_id` (UUID) для интеграций |
 | 💓 **Health-check** | `/health/` с проверкой БД и Redis — готов для k8s-проб |
 | 🧹 **Качество кода** | ruff · bandit · ty · pre-commit · pytest · GitHub Actions |
@@ -176,9 +177,16 @@ make up / down       # 🐳 docker compose up/down
 | `DJANGO_DEBUG` | Режим отладки | `False` (prod), `True` (dev) |
 | `DJANGO_ALLOWED_HOSTS` | Разрешённые хосты через запятую | — |
 | `DATABASE_URL` | URL базы данных | SQLite |
+| `DJANGO_DB_POOL` | Пул соединений psycopg (PostgreSQL) | `True` |
+| `DJANGO_DB_POOL_MAX_SIZE` | Максимум соединений в пуле (на процесс) | `10` |
 | `REDIS_URL` | URL Redis для кэша | `redis://redis:6379/1` |
+| `REDIS_MAX_CONNECTIONS` | Размер пула Redis-клиента | `100` |
+| `DJANGO_THROTTLE_ANON` | Лимит запросов для анонимов | `100/min` |
+| `DJANGO_THROTTLE_USER` | Лимит запросов для пользователей | `1000/min` |
+| `DJANGO_NUM_PROXIES` | Прокси перед приложением (prod) | `1` |
 | `DJANGO_LOG_LEVEL` | Уровень логирования | `INFO` |
-| `GUNICORN_WORKERS` | Количество воркеров gunicorn | `4` |
+| `GUNICORN_WORKERS` | Воркеры gunicorn | `CPU × 2 + 1` |
+| `GUNICORN_THREADS` | Потоки на воркер (gthread) | `4` |
 
 </details>
 

@@ -22,3 +22,7 @@ STORAGES['staticfiles']['BACKEND'] = 'whitenoise.storage.CompressedManifestStati
 
 # В production браузерные формы DRF не нужны
 REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] = ('rest_framework.renderers.JSONRenderer',)  # noqa: F821
+
+# Количество прокси перед приложением — для корректного определения IP клиента
+# в троттлинге (X-Forwarded-For)
+REST_FRAMEWORK['NUM_PROXIES'] = env.int('DJANGO_NUM_PROXIES', default=1)  # noqa: F821
