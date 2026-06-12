@@ -14,7 +14,7 @@ from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
-from config.views import health_check
+from core.health import health_check
 
 api_urlpatterns = [
     path('users/', include('apps.users.api.urls', namespace='users_api')),

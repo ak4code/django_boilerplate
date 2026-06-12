@@ -1,7 +1,7 @@
 from django.db import connections
 from django.http import HttpRequest, JsonResponse
 
-from commons.redis import get_redis
+from core.redis import get_redis
 
 
 def health_check(request: HttpRequest) -> JsonResponse:
