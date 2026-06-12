@@ -1,9 +1,16 @@
+# Общая конфигурация. Для разработки автоматически подхватывается
+# docker-compose.override.yml, для production:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   postgres:
     image: postgres:18-alpine
     hostname: postgres
-    ports:
-      - "5432:5432"
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-app}
       POSTGRES_USER: ${POSTGRES_USER:-app}
@@ -17,14 +24,13 @@ services:
       retries: 5
       start_period: 10s
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - backend
 
   redis:
     image: redis:8-alpine
     hostname: redis
-    ports:
-      - "6379:6379"
     volumes:
       - redis_data:/data
     command: >
@@ -39,6 +45,7 @@ services:
       retries: 5
       start_period: 10s
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - backend
 
@@ -46,24 +53,18 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: runtime
       args:
         PYTHON_VERSION: ${PYTHON_VERSION:-3.13}
         UID: ${UID:-1000}
-        INSTALL_DEV: ${INSTALL_DEV:-true}
     hostname: django
+    init: true
     ports:
       - "8000:8000"
-    volumes:
-      - .:/home/django/app
-      - ./.cache/logs:/home/django/logs
-      - ./.cache/www:/home/django/www
-      - uv_cache:/home/django/.cache/uv
     environment:
-      ENVIRONMENT: ${ENVIRONMENT:-dev}
       DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-config.settings}
       DATABASE_URL: postgres://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app}@postgres:5432/${POSTGRES_DB:-app}
       REDIS_URL: redis://redis:6379/1
+      REDIS_HOST: redis
       POSTGRES_HOST: postgres
     env_file:
       - ./.env
@@ -72,15 +73,14 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: ${MODE:-dev}
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - backend
 
 volumes:
   pg_data:
   redis_data:
-  uv_cache:
 
 networks:
   backend:

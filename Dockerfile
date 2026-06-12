@@ -1,64 +1,81 @@
-ARG UID=1000
+# syntax=docker/dockerfile:1
+
 ARG PYTHON_VERSION=3.13
 
+FROM ghcr.io/astral-sh/uv:0.11 AS uv
+
+
+# ============================== builder ==============================
 FROM python:${PYTHON_VERSION}-slim-trixie AS builder
 
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpq-dev \
-    curl \
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=never \
+    UV_PROJECT_ENVIRONMENT=/opt/venv
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-RUN useradd --create-home --shell /bin/bash builder
-USER builder
-WORKDIR /home/builder
+COPY --from=uv /uv /uvx /usr/local/bin/
 
-COPY --chown=builder:builder --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+WORKDIR /app
 
-RUN uv venv .venv
-ENV PATH="/home/builder/.venv/bin:$PATH"
+COPY pyproject.toml uv.lock ./
 
-COPY --chown=builder:builder pyproject.toml uv.lock* ./
-
+# --locked гарантирует точное соответствие uv.lock (сборка падает при рассинхроне)
 ARG INSTALL_DEV=false
-RUN if [ "$INSTALL_DEV" = "true" ] ; then \
-        uv sync --group dev ; \
+RUN --mount=type=cache,target=/root/.cache/uv \
+    if [ "$INSTALL_DEV" = "true" ]; then \
+        uv sync --locked --group dev; \
     else \
-        uv sync --no-group dev ; \
+        uv sync --locked --no-group dev; \
     fi
 
 
+# ============================== runtime ==============================
 FROM python:${PYTHON_VERSION}-slim-trixie AS runtime
 
-RUN apt-get update && apt-get install -y \
-    libpq5 \
-    netcat-openbsd \
-    && rm -rf /var/lib/apt/lists/*
+LABEL org.opencontainers.image.title="django-boilerplate" \
+      org.opencontainers.image.description="Production-ready Django API boilerplate" \
+      org.opencontainers.image.source="https://github.com/ak4code/django_boilerplate"
 
-ARG UID
-RUN useradd --create-home --shell /bin/bash --uid ${UID:-1000} django
-USER django
-WORKDIR /home/django/app
+ARG UID=1000
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libpq5 \
+        netcat-openbsd \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --create-home --shell /usr/sbin/nologin --uid "${UID}" django \
+    && install -d -o django -g django /app /app/staticfiles
 
-COPY --from=builder --chown=django:django /home/builder/.venv /home/django/.venv
-
-ENV VIRTUAL_ENV="/home/django/.venv"
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-
-COPY --chown=django:django . .
-
-RUN mkdir -p /home/django/logs /home/django/www
-
-ENV PYTHONPATH=/home/django/app \
+ENV VIRTUAL_ENV=/opt/venv \
+    PATH=/opt/venv/bin:$PATH \
+    PYTHONPATH=/app \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
+# venv принадлежит root: приложение не может модифицировать свои зависимости
+COPY --from=builder /opt/venv /opt/venv
+COPY --chmod=755 entrypoint.sh /usr/local/bin/entrypoint.sh
+
+WORKDIR /app
+
+USER django
+
 EXPOSE 8000
 
-# Entrypoint
-COPY --chown=django:django entrypoint.sh /home/django/entrypoint.sh
-RUN chmod +x /home/django/entrypoint.sh
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/', timeout=4)"]
 
-ENTRYPOINT ["/home/django/entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 CMD ["dev"]
+
+
+# ============================= production ============================
+FROM runtime AS production
+
+COPY --chown=django:django . .
+
+CMD ["prod"]

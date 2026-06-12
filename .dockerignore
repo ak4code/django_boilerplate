@@ -1,0 +1,37 @@
+# VCS
+.git
+.github
+.gitignore
+
+# Python artifacts
+__pycache__
+*.py[oc]
+*.egg-info
+build
+dist
+
+# Virtual environments and caches
+.venv
+.cache
+.pytest_cache
+.ruff_cache
+.uv-cache
+
+# Secrets and local data
+.env
+*.sqlite3
+staticfiles
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Tooling and docs
+.pre-commit-config.yaml
+Makefile
+README.md
+
+# IDE
+.idea
+.vscode

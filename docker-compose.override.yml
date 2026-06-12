@@ -1,0 +1,21 @@
+# Dev-оверрайд: подхватывается `docker compose up` автоматически.
+# Исходники монтируются в контейнер, порты БД доступны только с localhost.
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  redis:
+    ports:
+      - "127.0.0.1:6379:6379"
+
+  django:
+    build:
+      target: runtime
+      args:
+        INSTALL_DEV: "true"
+    environment:
+      ENVIRONMENT: dev
+    volumes:
+      - .:/app
+    command: dev
